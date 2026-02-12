@@ -1,0 +1,648 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>OVS • Registro de Doações</title>
+
+  <!-- PDF libs -->
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+
+  <style>
+    :root{
+      --bg:#0b1020;
+      --accent:#ffcc00;
+      --accent2:#00d1ff;
+      --ok:#37d67a;
+      --danger:#ff4d6d;
+      --text:#ffffff;
+      --muted:rgba(255,255,255,.75);
+      --shadow: 0 14px 40px rgba(0,0,0,.35);
+      --radius:18px;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background: radial-gradient(1200px 700px at 30% 10%, #1b2d6b 0%, var(--bg) 55%, #070b16 100%);
+      color:var(--text);
+    }
+    .top{
+      padding:16px 14px 10px;
+      display:flex;
+      align-items:center;
+      gap:12px;
+      justify-content:center;
+    }
+    .crest{
+      width:54px; height:auto;
+      filter: drop-shadow(0 6px 10px rgba(0,0,0,.25));
+      border-radius:10px;
+      background: rgba(255,255,255,.06);
+      padding:6px;
+    }
+    .headText{ text-align:left; line-height:1.1; }
+    .headText .p1{ font-size:18px; font-weight:900; }
+    .headText .p2{ font-size:14px; color:var(--muted); font-weight:700; margin-top:2px; }
+
+    .wrap{ max-width:980px; margin:0 auto; padding: 0 12px 24px; }
+    .grid{ display:grid; gap:12px; grid-template-columns: 1fr; }
+    @media (min-width: 880px){ .grid{ grid-template-columns: 420px 1fr; } }
+
+    .card{
+      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
+      border: 1px solid rgba(255,255,255,.10);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow:hidden;
+    }
+    .cardHeader{
+      padding:14px 14px 12px;
+      background: linear-gradient(90deg, rgba(255,204,0,.18), rgba(0,209,255,.12));
+      border-bottom:1px solid rgba(255,255,255,.10);
+    }
+    .cardHeader h2{ margin:0; font-size:18px; font-weight:950; }
+
+    .cardBody{ padding:14px; }
+    .label{ font-size:14px; font-weight:800; color:var(--muted); margin:10px 0 6px; }
+
+    .row2{ display:grid; grid-template-columns: 1fr 1fr; gap:10px; }
+    @media (max-width: 420px){ .row2{ grid-template-columns:1fr; } }
+
+    input, select{
+      width:100%;
+      padding:14px 12px;
+      border-radius:14px;
+      border:1px solid rgba(255,255,255,.14);
+      background: rgba(0,0,0,.18);
+      color:#fff;
+      font-size:20px; /* letras grandes */
+      font-weight:800;
+      outline:none;
+    }
+    input::placeholder{ color: rgba(255,255,255,.45); font-weight:700; }
+    input:focus, select:focus{
+      border-color: rgba(255,204,0,.55);
+      box-shadow: 0 0 0 4px rgba(255,204,0,.15);
+    }
+
+    .btnRow{ display:flex; gap:10px; margin-top:12px; flex-wrap:wrap; }
+    .btn{
+      border:0; border-radius:14px;
+      padding:14px 14px;
+      font-size:18px; font-weight:950;
+      cursor:pointer;
+      color:#0b1020;
+      background: var(--accent);
+      flex:1 1 210px;
+    }
+    .btn.secondary{
+      background: rgba(255,255,255,.14);
+      color:#fff;
+      border:1px solid rgba(255,255,255,.18);
+      flex: 1 1 140px;
+    }
+    .btn.danger{
+      background: rgba(255,77,109,.16);
+      color:#fff;
+      border:1px solid rgba(255,77,109,.35);
+    }
+    .btn:active{ transform: translateY(1px); }
+
+    .chips{ display:flex; gap:8px; flex-wrap:wrap; margin-top:10px; }
+    .chip{
+      padding:8px 10px;
+      border-radius:999px;
+      background: rgba(0,209,255,.14);
+      border:1px solid rgba(0,209,255,.28);
+      color:#e8fbff;
+      font-weight:900;
+      font-size:14px;
+      cursor:pointer;
+      user-select:none;
+    }
+    .chip.active{
+      background: rgba(255,204,0,.18);
+      border-color: rgba(255,204,0,.40);
+      color:#fff7cc;
+    }
+
+    .stats{ display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:8px; }
+    .stat{
+      background: rgba(0,0,0,.18);
+      border:1px solid rgba(255,255,255,.10);
+      border-radius:16px;
+      padding:12px;
+    }
+    .stat .t{ font-size:13px; color:var(--muted); font-weight:900; }
+    .stat .v{ font-size:22px; font-weight:1000; margin-top:4px; }
+    .stat .v.small{ font-size:18px; }
+
+    .listHeader{ display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; }
+    .listHeader .subtitle{ color:var(--muted); font-weight:800; font-size:14px; }
+
+    .table{ width:100%; border-collapse:separate; border-spacing:0 10px; margin-top:12px; }
+    .tr{
+      background: rgba(0,0,0,.18);
+      border:1px solid rgba(255,255,255,.10);
+      border-radius:16px;
+      overflow:hidden;
+    }
+    .tr td{ padding:12px 10px; vertical-align:top; font-size:16px; font-weight:800; color:#fff; }
+    .tr td small{ display:block; margin-top:3px; color:var(--muted); font-weight:800; font-size:12px; }
+
+    .pill{
+      display:inline-block;
+      padding:6px 10px;
+      border-radius:999px;
+      font-size:12px;
+      font-weight:1000;
+      white-space:nowrap;
+      border:1px solid rgba(255,255,255,.12);
+    }
+    .pill.pix{ background: rgba(55,214,122,.16); border-color: rgba(55,214,122,.35); color:#eafff2;}
+    .pill.dinheiro{ background: rgba(255,204,0,.16); border-color: rgba(255,204,0,.35); color:#fff7cc;}
+    .pill.transf{ background: rgba(0,209,255,.16); border-color: rgba(0,209,255,.35); color:#e8fbff;}
+
+    .actions{ display:flex; gap:8px; justify-content:flex-end; flex-wrap:wrap; }
+    .mini{
+      border:1px solid rgba(255,255,255,.18);
+      background: rgba(255,255,255,.10);
+      color:#fff;
+      padding:10px 10px;
+      border-radius:12px;
+      font-weight:950;
+      cursor:pointer;
+      font-size:14px;
+    }
+    .mini.danger{
+      border-color: rgba(255,77,109,.35);
+      background: rgba(255,77,109,.16);
+    }
+
+    .empty{
+      text-align:center;
+      color:var(--muted);
+      font-weight:800;
+      padding:18px 10px 6px;
+      font-size:16px;
+    }
+
+    /* PDF (A4) */
+    .pdfSheet{
+      width:794px;
+      min-height:1123px;
+      background:#f7f1df;
+      color:#1c1c1c;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      padding:56px 72px;
+    }
+    .pdfTop{ text-align:center; }
+    .pdfCrest{ width:150px; height:auto; display:block; margin:0 auto 16px; object-fit:contain; }
+    .pdfTop h1{ margin:0; font-size:24px; font-weight:600; }
+    .pdfTop h2{ margin:6px 0 0; font-size:22px; font-weight:600; }
+    .pdfTop .line1{ margin-top:38px; font-size:20px; font-weight:800; }
+    .pdfTop .line2{ margin-top:6px; font-size:20px; font-weight:600; }
+    .pdfTop .thanks{ margin-top:22px; font-size:18px; color:#2d2d2d; }
+
+    .pdfMeta{ margin-top:28px; display:flex; justify-content:space-between; font-size:14px; color:#333; font-weight:700; }
+    .pdfBoxes{ margin-top:18px; display:grid; grid-template-columns: 1fr 1fr; gap:12px; }
+    .pdfBox{
+      border:1px solid rgba(0,0,0,.15);
+      border-radius:12px;
+      padding:12px;
+      background: rgba(255,255,255,.35);
+    }
+    .pdfBox .t{ font-size:12px; color:#444; font-weight:800; }
+    .pdfBox .v{ margin-top:4px; font-size:20px; font-weight:900; }
+
+    .pdfTable{ margin-top:18px; width:100%; border-collapse:collapse; font-size:14px; }
+    .pdfTable th, .pdfTable td{ border-bottom:1px solid rgba(0,0,0,.12); padding:10px 6px; text-align:left; }
+    .pdfTable th{
+      background: rgba(0,0,0,.04);
+      font-size:12px;
+      text-transform:uppercase;
+      letter-spacing:.6px;
+    }
+    .pdfFoot{ margin-top:30px; text-align:center; font-size:20px; font-weight:700; }
+  </style>
+</head>
+
+<body>
+  <div class="top" role="banner">
+    <img class="crest" src="ovs_crest.png" alt="Brasão Paróquia" />
+    <div class="headText">
+      <div class="p1">OVS • Registro de Doações</div>
+      <div class="p2">Denise de Faria Barros • Paróquia do Rosário • Campina Grande</div>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <div class="grid">
+
+      <section class="card" aria-label="Cadastrar doação">
+        <div class="cardHeader"><h2>Registrar doação</h2></div>
+        <div class="cardBody">
+
+          <div class="label">Valor (R$)</div>
+          <input id="valor" placeholder="0,00" inputmode="numeric" autocomplete="off" />
+
+          <div class="label">Nome de quem doou</div>
+          <input id="nome" placeholder="Ex.: Maria Silva" autocomplete="off" />
+
+          <div class="row2">
+            <div>
+              <div class="label">Forma</div>
+              <select id="forma">
+                <option value="pix">PIX</option>
+                <option value="dinheiro">Dinheiro</option>
+                <option value="transferencia">Transferência</option>
+              </select>
+            </div>
+            <div>
+              <div class="label">Data</div>
+              <input id="data" type="date" />
+            </div>
+          </div>
+
+          <div class="btnRow">
+            <button class="btn" id="btnAdd">Salvar doação</button>
+            <button class="btn secondary" id="btnHoje">Hoje</button>
+            <button class="btn danger" id="btnLimparTudo">Apagar histórico</button>
+          </div>
+
+          <div class="label">Mês (toque para ver o histórico)</div>
+          <div class="chips" id="chips"></div>
+
+          <div class="stats">
+            <div class="stat">
+              <div class="t">Total do mês</div>
+              <div class="v" id="totalMes">R$ 0,00</div>
+            </div>
+            <div class="stat">
+              <div class="t">Total do ano (2026)</div>
+              <div class="v small" id="totalAno">R$ 0,00</div>
+            </div>
+          </div>
+
+          <div class="btnRow">
+            <button class="btn secondary" id="btnPdfShare">📤 PDF do mês (WhatsApp)</button>
+            <button class="btn secondary" id="btnPdf">📄 Gerar PDF do mês</button>
+          </div>
+
+        </div>
+      </section>
+
+      <section class="card" aria-label="Histórico do mês">
+        <div class="cardHeader">
+          <div class="listHeader">
+            <h2 id="tituloLista">Histórico do mês</h2>
+            <div class="subtitle" id="subLista">0 registros</div>
+          </div>
+        </div>
+        <div class="cardBody">
+          <div id="empty" class="empty" style="display:none;">Sem registros neste mês ainda.</div>
+          <table class="table" id="tbl"><tbody id="tbody"></tbody></table>
+        </div>
+      </section>
+
+    </div>
+  </div>
+
+  <div style="position:fixed; left:-99999px; top:0;">
+    <div id="pdfSheet" class="pdfSheet"></div>
+  </div>
+
+<script>
+(function(){
+  const STORAGE_KEY = "ovs_doacoes_v1";
+  const ANO_FIXO = 2026;
+
+  const meses = [
+    ["Jan", 0], ["Fev", 1], ["Mar", 2], ["Abr", 3], ["Mai", 4], ["Jun", 5],
+    ["Jul", 6], ["Ago", 7], ["Set", 8], ["Out", 9], ["Nov", 10], ["Dez", 11]
+  ];
+  const mesesExt = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
+
+  const fmtMoney = new Intl.NumberFormat("pt-BR", { style:"currency", currency:"BRL" });
+
+  const elValor = document.getElementById("valor");
+  const elNome  = document.getElementById("nome");
+  const elForma = document.getElementById("forma");
+  const elData  = document.getElementById("data");
+  const elTbody = document.getElementById("tbody");
+  const elEmpty = document.getElementById("empty");
+  const elTotalMes = document.getElementById("totalMes");
+  const elTotalAno = document.getElementById("totalAno");
+  const elTituloLista = document.getElementById("tituloLista");
+  const elSubLista = document.getElementById("subLista");
+  const elChips = document.getElementById("chips");
+
+  const btnAdd = document.getElementById("btnAdd");
+  const btnHoje = document.getElementById("btnHoje");
+  const btnLimparTudo = document.getElementById("btnLimparTudo");
+  const btnPdf = document.getElementById("btnPdf");
+  const btnPdfShare = document.getElementById("btnPdfShare");
+
+  function todayISO(){
+    const d = new Date();
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth()+1).padStart(2,"0");
+    const dd = String(d.getDate()).padStart(2,"0");
+    return `${yyyy}-${mm}-${dd}`;
+  }
+  elData.value = todayISO();
+
+  function load(){
+    try{ return JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]"); }
+    catch(e){ return []; }
+  }
+  function save(list){ localStorage.setItem(STORAGE_KEY, JSON.stringify(list)); }
+
+  function toCentsFromBRL(str){
+    if(!str) return 0;
+    const digits = String(str).replace(/\D/g,"");
+    if(!digits) return 0;
+    const intPart = digits.slice(0, -2) || "0";
+    const decPart = digits.slice(-2).padStart(2,"0");
+    return Number(intPart) * 100 + Number(decPart);
+  }
+  function centsToBRL(cents){ return fmtMoney.format((cents||0)/100); }
+
+  function maskBRLInput(input){
+    let digits = (input.value || "").replace(/\D/g, "");
+    if(digits.length === 0){ input.value = ""; return; }
+    digits = digits.slice(0, 12);
+    const intPart = digits.slice(0, -2) || "0";
+    const decPart = digits.slice(-2).padStart(2,"0");
+    const intFormatted = Number(intPart).toLocaleString("pt-BR");
+    input.value = `${intFormatted},${decPart}`;
+  }
+  elValor.addEventListener("input", () => maskBRLInput(elValor));
+
+  const now = new Date();
+  let viewMonth = now.getMonth();
+  let viewYear = ANO_FIXO;
+
+  function buildChips(){
+    elChips.innerHTML = "";
+    for(const [label, idx] of meses){
+      const c = document.createElement("div");
+      c.className = "chip" + (idx === viewMonth ? " active" : "");
+      c.textContent = label;
+      c.addEventListener("click", () => { viewMonth = idx; render(); });
+      elChips.appendChild(c);
+    }
+  }
+  function monthLabel(idx){ return mesesExt[idx] || ""; }
+
+  function escapeHTML(s){
+    return String(s)
+      .replaceAll("&","&amp;")
+      .replaceAll("<","&lt;")
+      .replaceAll(">","&gt;")
+      .replaceAll('"',"&quot;")
+      .replaceAll("'","&#039;");
+  }
+  function uuid(){ return "d"+Math.random().toString(16).slice(2)+Date.now().toString(16); }
+
+  function getMonthItems(list){
+    return list
+      .filter(it => {
+        const d = new Date(it.date);
+        return d.getFullYear() === viewYear && d.getMonth() === viewMonth;
+      })
+      .sort((a,b)=> (b.date||"").localeCompare(a.date||""));
+  }
+  function sumCents(list){ return list.reduce((acc,it)=>acc+(it.cents||0),0); }
+  function yearTotal(list){
+    return list.filter(it => (new Date(it.date)).getFullYear() === viewYear)
+               .reduce((acc,it)=>acc+(it.cents||0),0);
+  }
+
+  function formaPill(method){
+    if(method === "pix") return '<span class="pill pix">PIX</span>';
+    if(method === "dinheiro") return '<span class="pill dinheiro">Dinheiro</span>';
+    return '<span class="pill transf">Transferência</span>';
+  }
+
+  function render(){
+    buildChips();
+    const list = load();
+    const items = getMonthItems(list);
+
+    elTituloLista.textContent = `Histórico • ${monthLabel(viewMonth)} / ${viewYear}`;
+    elSubLista.textContent = `${items.length} registro(s)`;
+
+    elTotalMes.textContent = centsToBRL(sumCents(items));
+    elTotalAno.textContent = centsToBRL(yearTotal(list));
+
+    elTbody.innerHTML = "";
+    if(items.length === 0){
+      elEmpty.style.display = "block";
+      return;
+    }
+    elEmpty.style.display = "none";
+
+    for(const it of items){
+      const tr = document.createElement("tr");
+      tr.className = "tr";
+
+      const d = new Date(it.date);
+      const dataBR = `${String(d.getDate()).padStart(2,"0")}/${String(d.getMonth()+1).padStart(2,"0")}/${d.getFullYear()}`;
+
+      tr.innerHTML = `
+        <td style="width:44%">
+          ${escapeHTML(it.name||"—")}
+          <small>${dataBR} • ${formaPill(it.method)}</small>
+        </td>
+        <td style="width:26%">
+          ${centsToBRL(it.cents)}
+          <small>Doação</small>
+        </td>
+        <td style="width:30%">
+          <div class="actions">
+            <button class="mini" data-edit="${it.id}">Editar</button>
+            <button class="mini danger" data-del="${it.id}">Apagar</button>
+          </div>
+        </td>
+      `;
+      elTbody.appendChild(tr);
+    }
+
+    elTbody.querySelectorAll("button[data-del]").forEach(b=> b.addEventListener("click", ()=> apagar(b.dataset.del)));
+    elTbody.querySelectorAll("button[data-edit]").forEach(b=> b.addEventListener("click", ()=> editar(b.dataset.edit)));
+  }
+
+  function limparFormulario(){
+    elValor.value = "";
+    elNome.value = "";
+    elForma.value = "pix";
+    elData.value = todayISO();
+    elValor.focus();
+  }
+
+  function salvar(){
+    const cents = toCentsFromBRL(elValor.value);
+    const name = (elNome.value||"").trim();
+    const method = elForma.value;
+    const date = elData.value || todayISO();
+
+    if(cents <= 0){ alert("Digite um valor (ex.: 50,00)."); elValor.focus(); return; }
+    if(!name){ alert("Digite o nome de quem fez a doação."); elNome.focus(); return; }
+
+    const list = load();
+    list.push({ id: uuid(), cents, name, method, date });
+    save(list);
+
+    const d = new Date(date);
+    viewMonth = d.getMonth();
+    viewYear = d.getFullYear();
+
+    limparFormulario();
+    render();
+  }
+
+  function apagar(id){
+    if(!confirm("Apagar este registro?")) return;
+    const list = load().filter(x=> x.id !== id);
+    save(list);
+    render();
+  }
+
+  function editar(id){
+    const list = load();
+    const it = list.find(x=> x.id === id);
+    if(!it) return;
+
+    elValor.value = ((it.cents||0)/100).toLocaleString("pt-BR",{minimumFractionDigits:2, maximumFractionDigits:2});
+    elNome.value = it.name || "";
+    elForma.value = it.method || "pix";
+    elData.value = it.date || todayISO();
+
+    btnAdd.textContent = "Salvar edição";
+    btnAdd.style.background = "var(--ok)";
+    btnAdd.style.color = "#0b1020";
+
+    btnAdd.onclick = () => {
+      const cents = toCentsFromBRL(elValor.value);
+      const name = (elNome.value||"").trim();
+      const method = elForma.value;
+      const date = elData.value || todayISO();
+
+      if(cents <= 0){ alert("Digite um valor (ex.: 50,00)."); elValor.focus(); return; }
+      if(!name){ alert("Digite o nome de quem fez a doação."); elNome.focus(); return; }
+
+      it.cents = cents; it.name = name; it.method = method; it.date = date;
+      save(list);
+
+      btnAdd.textContent = "Salvar doação";
+      btnAdd.style.background = "";
+      btnAdd.style.color = "";
+      btnAdd.onclick = salvar;
+
+      limparFormulario();
+      render();
+    };
+    elValor.focus();
+  }
+
+  btnAdd.onclick = salvar;
+  btnHoje.addEventListener("click", ()=> elData.value = todayISO());
+  btnLimparTudo.addEventListener("click", ()=>{
+    if(!confirm("Apagar TODO o histórico deste celular?")) return;
+    localStorage.removeItem(STORAGE_KEY);
+    render();
+  });
+
+  async function gerarPDF(compartilhar){
+    const list = load();
+    const items = getMonthItems(list);
+    const totalMes = sumCents(items);
+    const totalAno = yearTotal(list);
+
+    const sheet = document.getElementById("pdfSheet");
+    const monthName = monthLabel(viewMonth);
+    const emitido = new Date().toLocaleDateString("pt-BR");
+
+    const rows = items.map(it => {
+      const d = new Date(it.date);
+      const dataBR = `${String(d.getDate()).padStart(2,"0")}/${String(d.getMonth()+1).padStart(2,"0")}/${d.getFullYear()}`;
+      const forma = (it.method==="pix"?"PIX":(it.method==="dinheiro"?"Dinheiro":"Transferência"));
+      return `<tr>
+        <td>${dataBR}</td>
+        <td>${escapeHTML(it.name||"—")}</td>
+        <td>${forma}</td>
+        <td style="text-align:right">${centsToBRL(it.cents)}</td>
+      </tr>`;
+    }).join("");
+
+    sheet.innerHTML = `
+      <div class="pdfTop">
+        <img class="pdfCrest" src="ovs_crest.png" alt="Brasão"/>
+        <h1>PARÓQUIA DE NOSSA SENHORA DO ROSÁRIO</h1>
+        <h2>CAMPINA GRANDE</h2>
+        <div class="line1">OVS - OBRA DAS VOCAÇÕES SACERDOTAIS</div>
+        <div class="line2">RELATÓRIO DE DOAÇÕES • ${monthName} / ${viewYear}</div>
+        <div class="thanks">Agradecemos a todos os contribuintes da OVS pela fidelidade a este trabalho missionário.</div>
+      </div>
+
+      <div class="pdfMeta">
+        <div><strong>Responsável:</strong> Denise de Faria Barros</div>
+        <div><strong>Emitido em:</strong> ${emitido}</div>
+      </div>
+
+      <div class="pdfBoxes">
+        <div class="pdfBox"><div class="t">TOTAL DO MÊS</div><div class="v">${centsToBRL(totalMes)}</div></div>
+        <div class="pdfBox"><div class="t">TOTAL DO ANO (${viewYear})</div><div class="v">${centsToBRL(totalAno)}</div></div>
+      </div>
+
+      <table class="pdfTable">
+        <thead><tr><th>Data</th><th>Nome</th><th>Forma</th><th style="text-align:right">Valor</th></tr></thead>
+        <tbody>
+          ${rows || `<tr><td colspan="4" style="text-align:center; padding:18px; color:#444; font-weight:700;">Sem registros neste mês.</td></tr>`}
+        </tbody>
+      </table>
+
+      <div class="pdfFoot">Gratidão a todos! • Pe. José Hermes</div>
+    `;
+
+    const img = sheet.querySelector("img");
+    if(img && !img.complete){
+      await new Promise(resolve => { img.onload = resolve; img.onerror = resolve; });
+    }
+
+    const canvas = await html2canvas(sheet, { scale: 2, backgroundColor: "#f7f1df", useCORS:true });
+    const imgData = canvas.toDataURL("image/png");
+    const { jsPDF } = window.jspdf;
+
+    const pdf = new jsPDF({ orientation:"portrait", unit:"mm", format:"a4" });
+    pdf.addImage(imgData, "PNG", 0, 0, 210, 297);
+
+    const blob = pdf.output("blob");
+    const file = new File([blob], `OVS_Doacoes_${monthName}_${viewYear}.pdf`, { type:"application/pdf" });
+
+    if(compartilhar && navigator.share && navigator.canShare && navigator.canShare({ files:[file] })){
+      try{
+        await navigator.share({
+          title: "OVS – Relatório de Doações",
+          text: `Relatório OVS • ${monthName}/${viewYear}`,
+          files: [file]
+        });
+        return;
+      }catch(e){}
+    }
+
+    pdf.save(`OVS_Doacoes_${monthName}_${viewYear}.pdf`);
+  }
+
+  btnPdf.addEventListener("click", ()=> gerarPDF(false));
+  btnPdfShare.addEventListener("click", ()=> gerarPDF(true));
+
+  // init
+  render();
+})();
+</script>
+</body>
+</html>
